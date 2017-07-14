@@ -1,0 +1,7 @@
+<table>
+  {% for worker in results %}
+    <tr>
+      <td><a href="{% url 'worker_show' worker_hostname=worker.hostname %}">{{ worker.hostname }}</a></td> <td>{{ worker.status }}</td>
+    </tr>
+  {% endfor %}
+</table>

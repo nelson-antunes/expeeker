@@ -1,0 +1,21 @@
+<b>{{ experiment.name }} </b>
+<ul>
+	<li>Roles:</li>
+		<ul> {% for role in experiment.roles %}		
+			<li>Name: {{ role.name }}
+				<ul>
+					<li>
+						Starting Command: {{ role.parameters }}
+					</li>
+					<li>
+						Number of Workers: {{ role.no_workers }}
+					</li>
+				</ul>
+			</li>
+		{% endfor %} </ul>
+
+	<li>Actors:</li>
+		<ul> {% for actor_id,actor_data in experiment.actors.iteritems %}
+			<li>[{{ actor_id }}/{{ actor_data.0 }}]: {{ actor_data.1 }}</li>
+		{% endfor %} </ul>
+</ul>
