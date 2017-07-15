@@ -235,7 +235,7 @@ class ControllerClient(object):
 			self.zk.create("%s/failures" % (worker.path), value=str(0).encode())
 			self.zk.create("%s/connection_time" % (worker.path))
 			self.zk.create("%s/disconnection_time" % (worker.path))
-			self.zk.create("%s/active_time" % (worker.path), default=str(0.0).encode())
+			self.zk.create("%s/active_time" % (worker.path), value=str(0.0).encode())
 
 			self.worker_add_disconnected(worker.hostname, 'ADDING WORKER', is_failure=False)
 
@@ -259,7 +259,7 @@ class ControllerClient(object):
 			self.zk.set("%s/status" % connection_path, worker_status.encode())
 		
 		if is_failure:
-			failures,_ = self.zk.get('%s/failures' % worker_path)
+			failures = int(self.zk.get('%s/failures' % worker_path)[0])
 			self.zk.set('%s/failures' % worker_path, value=str(failures+1).encode())
 	 	
 	 	self.zk.set("%s/connection" % worker_path, connection_path.encode())
@@ -289,18 +289,12 @@ class ControllerClient(object):
 		worker_connection,_ = self.zk.get("%s/connection" % (worker_path))
 		worker_status = self.worker_get_status(worker_path)
 
-		w = None
+		worker_active_time,_ = self.zk.get("%s/active_time" % (worker_path))
+		worker_disconnection_time,_ = self.zk.get("%s/disconnection_time" % (worker_path))
+		worker_connection_time,_ = self.zk.get("%s/connection_time" % (worker_path))
+		worker_failures,_ = self.zk.get("%s/failures" % (worker_path))
 
-		try:
-
-			worker_active_time,_ = self.zk.get("%s/active_time" % (worker_path))
-			worker_disconnection_time,_ = self.zk.get("%s/disconnection_time" % (worker_path))
-			worker_connection_time,_ = self.zk.get("%s/connection_time" % (worker_path))
-			worker_failures,_ = self.zk.get("%s/failures" % (worker_path))
-
-			w = Worker(worker_hostname, worker_username, path=worker_path, password=worker_password, pkey=worker_pkey,status=worker_status, failures=int(worker_failures or '0'), active_time=float(worker_active_time or '0'), disconnection_time=float(worker_disconnection_time or '0'),connection_time=float(worker_connection_time or '0'))
-		except:
-			print worker_hostname		
+		w = Worker(worker_hostname, worker_username, path=worker_path, password=worker_password, pkey=worker_pkey,status=worker_status, failures=int(worker_failures or '0'), active_time=float(worker_active_time or '0'), disconnection_time=float(worker_disconnection_time or '0'),connection_time=float(worker_connection_time or '0'))
 
 		return w
 	

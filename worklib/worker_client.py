@@ -3,7 +3,7 @@
 #   @email: nelson.a.antunes at gmail.com
 #   @date: (DD/MM/YYYY) 27/01/2017
 
-import kazoo, traceback, subprocess, threading, imp, sys, time
+import kazoo, traceback, subprocess, threading, imp, os, time
 from kazoo.client import *
 from worklib.Snapshot import *
 
@@ -102,7 +102,7 @@ class WorkerClient(object):
 		return cfg
 
 	def worker_active_time_uptade(self,adding_time):
-		active_time,_ = self.zk.get("%s/active_time" % self.worker_path)
+		active_time = float(self.zk.get("%s/active_time" % self.worker_path)[0])
 		self.zk.set("%s/active_time" % self.worker_path, value= str(active_time+adding_time).encode())	
 
 	def worker_keep_alive(self, time, busy=False):
@@ -112,13 +112,7 @@ class WorkerClient(object):
 		except:
 			pass
 
-		if not connected:
-			self.connection_timeout+=1
-			if self.connection_timeout > 7:
-				sys.exit(1) #disconnected for too long, wait restart
-
-		else:
-			self.connection_timeout = 0
+		if connected:
 			self.worker_active_time_uptade(time)
 
 		if (not self.connection) or busy != self.busy:
@@ -162,7 +156,7 @@ class WorkerClient(object):
 		wc = WorkerClient(self.zk_addr)
 		@self.zk.DataWatch('%s/start' % exp_obj.path)
 		def ready(data,stat):
-			if stat:
+			if data:
 				exp_obj.run(wc)
 				return False
 

@@ -46,8 +46,8 @@ class RPM(multiprocessing.Process):
 		while not exit:
 			now = time.time()
 			try:
-				with open("rpm_activity.log","w+") as f:
-					print >> f, "%16s, \t%50s, \t%13s, \t%24s, \t%24s" %('TEMPO ATIVO', 'HOSTNAME', 'ESTADO', 'ULTIMA VEZ QUE LIGOU', 'QUANDO DESCONECTOU')
+				with open("rpm_activity.log","w+") as fa:
+					print >> fa, "%16s, \t%50s, \t%13s, \t%24s, \t%24s" %('TEMPO ATIVO', 'HOSTNAME', 'ESTADO', 'ULTIMA VEZ QUE LIGOU', 'QUANDO DESCONECTOU')
 					for worker in sorted(cclient.worker_get_all(), key=lambda x: x.hostname):
 						
 
@@ -59,17 +59,15 @@ class RPM(multiprocessing.Process):
 
 						else:
 							workers_disconnected.add(worker.hostname)
-							if worker.status == 'LOST BUSY' and now - worker.disconnection_time > _realocate_timeout:
-								cclient.worker_add_disconnected(worker.hostname, 'RECOVERING')
-								cclient.task_add(COMMANDS.RECOVER_ACTOR, worker= worker)
-								
-							elif worker.status == 'NEW LOST IDLE':
-								cclient.worker_add_disconnected(worker.hostname, 'LOST IDLE')
+							#if worker.status == 'LOST BUSY' and now - worker.disconnection_time > _realocate_timeout:
 
-							elif worker.status == 'NEW LOST BUSY':
-								cclient.worker_add_disconnected(worker.hostname, 'LOST BUSY')
-								#cclient.task_add(COMMANDS.START_WORKER, worker= worker)
-						
+							if worker.status == 'NEW LOST BUSY':
+								with open('failures_recov.txt','a+') as fi:
+									print >> fi, time.time(), worker.hostname
+								
+								cclient.worker_add_disconnected(worker.hostname, 'RECOVERING')
+								#cclient.task_add(COMMANDS.RECOVER_ACTOR, worker= worker)
+								
 						workers.add(worker)
 						
 						dcnx_time = ''
@@ -80,10 +78,11 @@ class RPM(multiprocessing.Process):
 						if worker.connection_time != 0:
 							last_login = time.ctime(worker.connection_time)
 						
-						print >> f, "%16f, \t%50s, \t%13s, \t%24s, \t%24s" %(worker.active_time, worker.hostname, worker.status, last_login, dcnx_time)
+						print >> fa, "%16f, \t%50s, \t%13s, \t%24s, \t%24s" %(worker.active_time, worker.hostname, worker.status, last_login, dcnx_time)
+			
 			except Exception, e:
-				with open("rpm_output.log","w") as f:
-					print >> f, worker.hostname, e 
+				with open("rpm_output.log","a+") as fo:
+					print >> fo, worker.hostname, e 
 			last = now
 			time.sleep(_logging_interval)
 
@@ -231,8 +230,7 @@ class ControllerDaemon(Daemon):
 									
 									channel.close()
 
-						print exp.name, "run all!"
-
+						
 						self.cclient.worker_remove_experiments(worker.path)
 						self.cclient.worker_add_disconnected(worker.hostname, 'LOST IDLE')
 
@@ -281,7 +279,7 @@ class ControllerDaemon(Daemon):
 				else:
 					print worker.hostname, "hostname already registered!"
 					#TODO: remove on final
-					self.cclient.task_add(COMMANDS.INSTALL_WORKER, worker=worker)
+					self.cclient.task_add(COMMANDS.START_WORKER, worker=worker)
 
 				self.cclient.task_del(task_now)
 
@@ -309,7 +307,7 @@ class ControllerDaemon(Daemon):
 					#Python version output goes to the stderr interface (y tho?)
 					_,stderr = channel.run("python -V")
 					vers = stderr.read().strip()
-					if int(vers.split(' ')[-1]) <= _pyvers:
+					if vers.split(' ')[-1] < _pyvers:
 						print worker.hostname,"installing Python %s + pip [+ gcc + make] (actual version = %s)" % (_pyvers,vers)
 
 						channel.run("sudo yum install -y --nogpgcheck make gcc")

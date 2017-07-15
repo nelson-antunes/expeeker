@@ -29,7 +29,7 @@ def main():
         print "CREATING EXPERIMENTS FOLDER"
         os.mkdir("./experiments")
 
-    subprocess.call("python daemon_controller.py start", shell=True)
+    subprocess.call("python daemon_controller.py restart", shell=True)
 
 if __name__ == '__main__':
     sys.exit(main())

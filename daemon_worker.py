@@ -3,7 +3,7 @@
 #   @email: nelson.a.antunes at gmail.com
 #   @date: (DD/MM/YYYY) 27/01/2017
 
-import sys, time, logging, time, traceback
+import os, sys, time, logging, time
 from extralib.daemon import Daemon
 
 logging.basicConfig(filename='logging.out',format='%(asctime)-15s %(levelname)s %(message)s', 
@@ -49,7 +49,7 @@ class WorkerDaemon(Daemon):
 				wclient.worker_keep_alive(actual_timestamp -last_timestamp, busy)
 
 			except:
-				traceback.print_exc()
+				os._exit(1)
 
 			last_timestamp = actual_timestamp
 			time.sleep(sleep_interval)
